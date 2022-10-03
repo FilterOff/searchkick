@@ -18,7 +18,7 @@ module Searchkick
 
     def initialize(klass, term = "*", **options)
       unknown_keywords = options.keys - [:aggs, :block, :body, :body_options, :boost,
-        :boost_by, :boost_by_distance, :boost_by_recency, :boost_where, :conversions, :conversions_term, :debug, :emoji, :exclude, :explain,
+        :boost_by, :boost_by_distance, :boost_by_recency, :boost_where, :conversions, :conversions_term, :custom_functions, :debug, :emoji, :exclude, :explain,
         :fields, :highlight, :includes, :index_name, :indices_boost, :limit, :load,
         :match, :misspellings, :models, :model_includes, :offset, :operator, :order, :padding, :page, :per_page, :profile,
         :request_params, :routing, :scope_results, :scroll, :select, :similar, :smart_aggs, :suggest, :total_entries, :track, :type, :where]
@@ -479,7 +479,7 @@ module Searchkick
         # post filters
         set_post_filters(payload, post_filters) if post_filters.any?
 
-        custom_filters = []
+        custom_filters = custom_functions
         multiply_filters = []
 
         set_boost_by(multiply_filters, custom_filters)
@@ -1153,6 +1153,10 @@ module Searchkick
 
     def body_options
       options[:body_options] || {}
+    end
+
+    def custom_functions
+      options[:custom_functions] || []
     end
 
     def below73?
