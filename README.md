@@ -26,7 +26,7 @@ Check out [Searchjoy](https://github.com/ankane/searchjoy) for analytics and [Au
 
 :tangerine: Battle-tested at [Instacart](https://www.instacart.com/opensource)
 
-[![Build Status](https://github.com/ankane/searchkick/workflows/build/badge.svg?branch=master)](https://github.com/ankane/searchkick/actions)
+[![Build Status](https://github.com/ankane/searchkick/actions/workflows/build.yml/badge.svg)](https://github.com/ankane/searchkick/actions)
 
 ## Contents
 
@@ -42,8 +42,6 @@ Check out [Searchjoy](https://github.com/ankane/searchjoy) for analytics and [Au
 - [Advanced Search](#advanced)
 - [Reference](#reference)
 - [Contributing](#contributing)
-
-Searchkick 5.0 was recently released! See [how to upgrade](#upgrading)
 
 ## Getting Started
 
@@ -1112,7 +1110,7 @@ Restaurant.search("soup", where: {bounds: {geo_shape: {type: "polygon", coordina
 Falling entirely within the query shape
 
 ```ruby
-Restaurant.search("salad", where: {bounds: {geo_shape: {type: "circle", relation: "within", coordinates: [{lat: 38, lon: -123}], radius: "1km"}}})
+Restaurant.search("salad", where: {bounds: {geo_shape: {type: "circle", relation: "within", coordinates: {lat: 38, lon: -123}, radius: "1km"}}})
 ```
 
 Not touching the query shape
@@ -1485,7 +1483,15 @@ ENV["ELASTICSEARCH_URL"] = "https://user:password@host1,https://user:password@ho
 ENV["OPENSEARCH_URL"] = "https://user:password@host1,https://user:password@host2"
 ```
 
-See [elastic-transport](https://github.com/elastic/elastic-transport-ruby) or [opensearch-transport](https://github.com/opensearch-project/opensearch-ruby/tree/main/opensearch-transport) for a complete list of options.
+### Client Options
+
+Create an initializer with:
+
+```ruby
+Searchkick.client_options[:reload_connections] = true
+```
+
+See the docs for [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/client/ruby-api/current/advanced-config.html) or [Opensearch](https://rubydoc.info/gems/opensearch-transport#configuration) for a complete list of options.
 
 ### Lograge
 
@@ -1838,6 +1844,10 @@ To query nested data, use dot notation.
 ```ruby
 Product.search("san", fields: ["store.city"], where: {"store.zip_code" => 12345})
 ```
+
+## Nearest Neighbors
+
+You can use custom mapping and searching to index vectors and perform k-nearest neighbor search. See the examples for [Elasticsearch](examples/elasticsearch_knn.rb) and [OpenSearch](examples/opensearch_knn.rb).
 
 ## Reference
 

@@ -191,7 +191,7 @@ module Searchkick
     end
 
     def retry_misspellings?(response)
-      @misspellings_below && Results.new(searchkick_klass, response).total_count < @misspellings_below
+      @misspellings_below && response["error"].nil? && Results.new(searchkick_klass, response).total_count < @misspellings_below
     end
 
     private
@@ -199,7 +199,11 @@ module Searchkick
     def handle_error(e)
       status_code = e.message[1..3].to_i
       if status_code == 404
-        raise MissingIndexError, "Index missing - run #{reindex_command}"
+        if e.message.include?("No search context found for id")
+          raise MissingIndexError, "No search context found for id"
+        else
+          raise MissingIndexError, "Index missing - run #{reindex_command}"
+        end
       elsif status_code == 500 && (
         e.message.include?("IllegalArgumentException[minimumSimilarity >= 1]") ||
         e.message.include?("No query registered for [multi_match]") ||
@@ -251,7 +255,7 @@ module Searchkick
       default_limit = searchkick_options[:deep_paging] ? 1_000_000_000 : 10_000
       per_page = (options[:limit] || options[:per_page] || default_limit).to_i
       padding = [options[:padding].to_i, 0].max
-      offset = options[:offset] || (page - 1) * per_page + padding
+      offset = (options[:offset] || (page - 1) * per_page + padding).to_i
       scroll = options[:scroll]
 
       max_result_window = searchkick_options[:max_result_window]
@@ -369,7 +373,7 @@ module Searchkick
             field_misspellings = misspellings && (!misspellings_fields || misspellings_fields.include?(base_field(field)))
 
             if field == "_all" || field.end_with?(".analyzed")
-              shared_options[:cutoff_frequency] = 0.001 unless operator.to_s == "and" || field_misspellings == false || (!below73? && !track_total_hits?)
+              shared_options[:cutoff_frequency] = 0.001 unless operator.to_s == "and" || field_misspellings == false || (!below73? && !track_total_hits?) || match_type == :match_phrase || !below80? || Searchkick.opensearch?
               qs << shared_options.merge(analyzer: "searchkick_search")
 
               # searchkick_search and searchkick_search2 are the same for some languages
@@ -505,7 +509,7 @@ module Searchkick
         set_highlights(payload, fields) if options[:highlight]
 
         # timeout shortly after client times out
-        payload[:timeout] ||= "#{Searchkick.search_timeout + 1}s"
+        payload[:timeout] ||= "#{((Searchkick.search_timeout + 1) * 1000).round}ms"
 
         # An empty array will cause only the _id and _type for each hit to be returned
         # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html
@@ -1169,6 +1173,10 @@ module Searchkick
 
     def below710?
       Searchkick.server_below?("7.10.0")
+    end
+
+    def below80?
+      Searchkick.server_below?("8.0.0")
     end
   end
 end
